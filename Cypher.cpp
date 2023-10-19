@@ -4,7 +4,8 @@
 #include <wincrypt.h>
 
 #include "../Include/Cypher.h"
-#include "../Include/stdafx.h"
+#include "../Include/Common.h"
+#include "../Include/LogClass.h"
 #include "../Include/UTF_Unocode.h"
 
 #pragma comment(lib, "Crypt32.lib")
@@ -51,7 +52,7 @@ bool AES::EncryptInPlace(std::string& iString)
     bool err = false;
     DWORD data_len = (DWORD)iString.length();
     DWORD dw_ret_sz = data_len;
-    const auto release_lmbd = [&](void *ptr = nullptr) {
+    std::shared_ptr<void> _{nullptr, [&](void* ptr = nullptr) {
         if (pHCRYPT)
         {
             CryptReleaseContext(pHCRYPT, 0);
@@ -62,8 +63,7 @@ bool AES::EncryptInPlace(std::string& iString)
             CryptDestroyKey(pHKey);
             pHKey = 0;
         }
-    };
-    auto context_Guard = MakeScopeGuard(release_lmbd);
+    }};
     do {
         err = InitContext(pHCRYPT, pHKey);
         if (err)
@@ -94,7 +94,7 @@ bool AES::DecryptInPlace(std::string& iString)
     HCRYPTKEY pHKey = NULL;
     bool err = false;
     DWORD stringLen = static_cast<DWORD>(iString.size());
-    const auto release_lmbd = [&](void* ptr = nullptr) {
+    std::shared_ptr<void> _{nullptr, [&](void* ptr = nullptr) {
         if (pHCRYPT)
         {
             CryptReleaseContext(pHCRYPT, 0);
@@ -105,8 +105,7 @@ bool AES::DecryptInPlace(std::string& iString)
             CryptDestroyKey(pHKey);
             pHKey = 0;
         }
-    };
-    auto context_Guard = MakeScopeGuard(release_lmbd);
+    }};
     do
     {
         err = InitContext(pHCRYPT, pHKey);
@@ -155,9 +154,9 @@ bool AES::ExportKeys(std::string& key, std::string& iv)
 {
     key.clear();
     key.append(32, '0');
-    memcpy(static_cast<void*>(key.data()), static_cast<void*>(m_Key.data()), m_Key.size());
+    memcpy((void*)key.data(), (void*)m_Key.data(), m_Key.size());
     iv.clear();
     iv.append(16, '0');
-    memcpy(static_cast<void*>(iv.data()), static_cast<void*>(m_IV.data()), m_IV.size());
+    memcpy((void*)(iv.data()), (void*)m_IV.data(), m_IV.size());
     return false;
 }

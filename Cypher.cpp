@@ -9,7 +9,7 @@
 
 #include "../Include/Cypher.h"
 #include "../Include/Common.h"
-#include "../Include/LogClass.h"
+#include "../Include/LogLib.h"
 
 #pragma comment(lib, "Bcrypt.lib")
 #pragma comment(lib, "Crypt32.lib")
@@ -40,7 +40,7 @@ static bool AES_EncryptEx(HCRYPTKEY &hKey, void *ptr, size_t size, std::vector<u
     return res;
 }
 
-static bool AES_DecryptEx(HCRYPTKEY& hKey, void* ptr, size_t size, std::vector<uint8_t>& oData)
+static bool AES_DecryptEx(HCRYPTKEY &hKey, void* ptr, size_t size, std::vector<uint8_t> &oData)
 {
     HCRYPTPROV prov_context = 0;
     HCRYPTKEY  crypt_key = 0;
@@ -101,12 +101,12 @@ bool AES::InitContext(HCRYPTPROV &provider, HCRYPTKEY &key) const
     return !res;
 }
 
-AES::AES(const AES& rhs)
+AES::AES(const AES &rhs)
 {
     *this = rhs;
 };
 
-AES& AES::operator= (const AES& rhs)
+AES &AES::operator= (const AES &rhs)
 {
     std::copy(std::begin(rhs.m_Key), std::end(rhs.m_Key), std::begin(m_Key));
     std::copy(std::begin(rhs.m_IV), std::end(rhs.m_IV), std::begin(m_IV));
@@ -356,12 +356,12 @@ bool RSA::PEM_Encode(KeyType type, std::vector<uint8_t> &data)
     {
         return false;
     }
-    else if (type & RSA::KeyType_Public)
+    else if (type  &RSA::KeyType_Public)
     {
         formatted_prefix  += std::string(" ") + c_PublicKeyId;
         formatted_postfix += std::string(" ") + c_PublicKeyId;
     }
-    else if (type & RSA::KeyType_Full)
+    else if (type  &RSA::KeyType_Full)
     {
         formatted_prefix  += std::string(" ") + c_PrivateKeyId;
         formatted_postfix += std::string(" ") + c_PrivateKeyId;
@@ -420,12 +420,12 @@ const RSA::KeyParams RSA::FillParams(KeyType type) const
     {
         return params;
     }
-    else if (type & KeyType_Public)
+    else if (type  &KeyType_Public)
     {
         params.BlobType   = BCRYPT_RSAPUBLIC_BLOB;
         params.StructType = CNG_RSA_PUBLIC_KEY_BLOB;
     }
-    else if (type & KeyType_Full)
+    else if (type  &KeyType_Full)
     {
         params.BlobType   = BCRYPT_RSAFULLPRIVATE_BLOB;
         params.StructType = CNG_RSA_PRIVATE_KEY_BLOB;
@@ -513,14 +513,14 @@ bool RSA::ImportKeyInfo(KeyType type, const std::vector<uint8_t> &keyData)
 
 bool RSA::ExportKeyInfo(KeyType type, std::vector<uint8_t> &keyData)
 {
-    if (!ValidKeyType(m_Keytype & type))
+    if (!ValidKeyType(m_Keytype  &type))
     {
         return false;
     }
     bool res = true;
     NTSTATUS st = 0;
     DWORD o_size = 0;
-    const KeyParams& params = FillParams(type);
+    const KeyParams &params = FillParams(type);
 
     do
     {
@@ -551,7 +551,7 @@ bool RSA::ExportKeyInfo(KeyType type, std::vector<uint8_t> &keyData)
 
 bool RSA::Encrypt(const std::vector<uint8_t> &iString, std::vector<uint8_t> &oString) const
 {
-    if (!m_KeyHandle || (m_Keytype & KeyType_Undefined) || iString.empty())
+    if (!m_KeyHandle || (m_Keytype  &KeyType_Undefined) || iString.empty())
     {
         return false;
     }
@@ -589,7 +589,7 @@ bool RSA::Encrypt(const std::vector<uint8_t> &iString, std::vector<uint8_t> &oSt
 
 bool RSA::Decrypt(const std::vector<uint8_t> &iString, std::vector<uint8_t> &oString) const
 {
-    if (!m_KeyHandle || (m_Keytype & KeyType_Undefined || m_Keytype & KeyType_Public) || iString.empty())
+    if (!m_KeyHandle || (m_Keytype  &KeyType_Undefined || m_Keytype  &KeyType_Public) || iString.empty())
     {
         return false;
     }
@@ -680,7 +680,7 @@ const Hash Hash::Crc32()
     return Hash(Hash_Crc32);
 }
 
-static uint32_t ComputeCrc32(const std::vector<uint8_t>& iData)
+static uint32_t ComputeCrc32(const std::vector<uint8_t> &iData)
 {
     typedef uint32_t (__stdcall *t_RtlComputeCrc32)(int, const uint8_t*, uint32_t);
     t_RtlComputeCrc32 crc32Calc = nullptr;
@@ -701,7 +701,7 @@ static uint32_t ComputeCrc32(const std::vector<uint8_t>& iData)
     return crc32Calc(0, iData.data(), static_cast<uint32_t>(iData.size()));
 }
 
-const std::vector<uint8_t> Hash::InnerHash(const std::vector<uint8_t>& iData) const
+const std::vector<uint8_t> Hash::InnerHash(const std::vector<uint8_t> &iData) const
 {
     std::vector<uint8_t> out_hash;
     switch (m_ExternType)
@@ -711,7 +711,7 @@ const std::vector<uint8_t> Hash::InnerHash(const std::vector<uint8_t>& iData) co
             uint32_t crc32 = ComputeCrc32(iData);
             while (crc32)
             {
-                out_hash.push_back(crc32 & 0xFF);
+                out_hash.push_back(crc32  &0xFF);
                 crc32 >>= 8;
             }
             return { out_hash.rbegin(), out_hash.rend() };
@@ -723,7 +723,7 @@ const std::vector<uint8_t> Hash::InnerHash(const std::vector<uint8_t>& iData) co
     }
 }
 
-const std::vector<uint8_t> Hash::CalculateHash(const std::vector<uint8_t>& iData, const std::vector<uint8_t>& iSalt) const
+const std::vector<uint8_t> Hash::CalculateHash(const std::vector<uint8_t> &iData, const std::vector<uint8_t> &iSalt) const
 {
     if (m_ExternType != Hash_Undefined)
     {
